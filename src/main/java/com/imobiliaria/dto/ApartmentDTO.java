@@ -26,11 +26,9 @@ public class ApartmentDTO {
     @DecimalMin(value = "0.01", message = "Preço deve ser positivo")
     private BigDecimal price;
 
-    @NotNull(message = "Número de quartos é obrigatório")
     @Min(value = 0, message = "Quartos deve ser >= 0")
     private Integer bedrooms;
 
-    @NotNull(message = "Número de banheiros é obrigatório")
     @Min(value = 1, message = "Banheiros deve ser >= 1")
     private Integer bathrooms;
 
@@ -55,4 +53,16 @@ public class ApartmentDTO {
     private Boolean sold;
     private Boolean financing;
     private List<String> images;
+
+    @AssertTrue(message = "Número de quartos é obrigatório")
+    private boolean isBedroomsValid() {
+        if (category == PropertyCategory.LAND) return true;
+        return bedrooms != null;
+    }
+
+    @AssertTrue(message = "Número de banheiros é obrigatório")
+    private boolean isBathroomsValid() {
+        if (category == PropertyCategory.LAND) return true;
+        return bathrooms != null;
+    }
 }
