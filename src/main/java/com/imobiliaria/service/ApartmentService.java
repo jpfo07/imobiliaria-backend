@@ -2,9 +2,11 @@ package com.imobiliaria.service;
 
 import com.imobiliaria.dto.ApartmentDTO;
 import com.imobiliaria.entity.Apartment;
+import com.imobiliaria.entity.Owner;
 import com.imobiliaria.entity.PropertyCategory;
 import com.imobiliaria.entity.PropertyType;
 import com.imobiliaria.repository.ApartmentRepository;
+import com.imobiliaria.repository.OwnerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +19,14 @@ import java.util.List;
 public class ApartmentService {
 
     private final ApartmentRepository apartmentRepository;
+    private final OwnerRepository ownerRepository;
 
     public List<Apartment> getAll() {
         return apartmentRepository.findByActiveTrue();
+    }
+
+    public List<Apartment> getAllAdmin() {
+        return apartmentRepository.findAll();
     }
 
     public List<Apartment> getFeatured() {
@@ -56,14 +63,12 @@ public class ApartmentService {
         return apartmentRepository.save(apartment);
     }
 
-    // Método para desativação lógica (usado no site comum)
     public void delete(Long id) {
         Apartment apartment = getById(id);
         apartment.setActive(false);
         apartmentRepository.save(apartment);
     }
 
-    // Método para exclusão real (exigido pelo AdminController)
     public void hardDelete(Long id) {
         Apartment apartment = getById(id);
         apartmentRepository.delete(apartment);
@@ -83,21 +88,29 @@ public class ApartmentService {
         apartment.setArea(dto.getArea());
         apartment.setType(dto.getType());
         apartment.setCategory(dto.getCategory());
-        apartment.setOwnerPhone(dto.getOwnerPhone());
 
-        // Garante que valores booleanos não sejam nulos
+        // Monta/atualiza proprietário se nome informado
+        if (dto.getOwnerName() != null && !dto.getOwnerName().isBlank()) {
+            Owner owner = apartment.getOwner() != null ? apartment.getOwner() : new Owner();
+            owner.setName(dto.getOwnerName());
+            owner.setPhone(dto.getOwnerPhone());
+            owner.setEmail(dto.getOwnerEmail());
+            apartment.setOwner(owner);
+        } else {
+            apartment.setOwner(null);
+        }
+
         apartment.setFeatured(dto.getFeatured() != null ? dto.getFeatured() : false);
         apartment.setActive(dto.getActive() != null ? dto.getActive() : true);
         apartment.setSold(dto.getSold() != null ? dto.getSold() : false);
         apartment.setFinancing(dto.getFinancing() != null ? dto.getFinancing() : false);
-        
-        // Proteção crucial: se a lista de imagens for nula no DTO, cria uma lista vazia
+
         if (dto.getImages() != null) {
             apartment.setImages(new ArrayList<>(dto.getImages()));
         } else {
             apartment.setImages(new ArrayList<>());
         }
-        
+
         return apartment;
     }
 }

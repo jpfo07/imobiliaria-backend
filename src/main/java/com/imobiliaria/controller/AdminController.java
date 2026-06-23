@@ -24,11 +24,12 @@ public class AdminController {
     private final UserService        userService;
     private final FavoriteService    favoriteService;
     private final ImageUploadService imageUploadService;
+    private final OwnerService       ownerService;
 
     // ── Imóveis ────────────────────────────────────────────
     @GetMapping("/apartments")
     public ResponseEntity<List<Apartment>> getAllApartments() {
-        return ResponseEntity.ok(apartmentService.getAll());
+        return ResponseEntity.ok(apartmentService.getAllAdmin());
     }
 
     @PostMapping("/apartments")
@@ -71,5 +72,11 @@ public class AdminController {
     @GetMapping("/favorites")
     public ResponseEntity<List<Map<String, Object>>> getAllFavorites() {
         return ResponseEntity.ok(favoriteService.getAllFavoritesAdmin());
+    }
+
+    // ── Proprietários ──────────────────────────────────────
+    @GetMapping("/owners")
+    public ResponseEntity<List<Map<String, Object>>> getAllOwners() {
+        return ResponseEntity.ok(ownerService.getAllOwnersWithApartments());
     }
 }

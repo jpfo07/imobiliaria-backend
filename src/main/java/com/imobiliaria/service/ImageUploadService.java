@@ -19,6 +19,12 @@ public class ImageUploadService {
 
     private final Cloudinary cloudinary;
 
+    // Public ID do logo no Cloudinary — faça upload do logo uma vez e coloque o public_id aqui
+    // Ex: se o logo está em "logos/moreira-logo", coloque "logos:moreira-logo"
+    // (Cloudinary usa ":" como separador de pasta no overlay)
+    @Value("${cloudinary.logo.public-id:logos:moreira-logo}")
+    private String logoPublicId;
+
     private static final Set<String> ALLOWED_TYPES = Set.of(
         "image/jpeg", "image/jpg", "image/png", "image/webp"
     );
@@ -30,7 +36,9 @@ public class ImageUploadService {
     }
 
     /**
-     * Upload de imagem de imóvel com marca d'água via Cloudinary overlay
+     * Upload de imagem de imóvel:
+     * - Preserva proporção original (c_pad com background branco) → sem corte, sem distorção
+     * - Aplica o logo da imobiliária como marca d'água no canto inferior direito
      */
     public String uploadWithWatermark(MultipartFile file) throws IOException {
         validateFile(file);
@@ -41,17 +49,21 @@ public class ImageUploadService {
             file.getBytes(),
             ObjectUtils.asMap(
                 "public_id", publicId,
-                "folder",    "imoveis",
                 "transformation", new Transformation()
+                    // Redimensiona mantendo proporção — preenche espaço vazio com branco
+                    .width(1200).height(800)
+                    .crop("pad")
+                    .background("white")
                     .quality("auto")
                     .fetchFormat("auto")
-                    // Marca d'água: overlay com o texto da imobiliária no canto inferior direito
+                    // Marca d'água: logo no canto inferior direito
                     .chain()
-                    .overlay("text:Arial_28_bold:Moreira%20%26%20Oliveira")
-                    .color("white")
+                    .overlay(logoPublicId)
+                    .width(180)
+                    .crop("scale")
                     .gravity("south_east")
                     .x(15).y(15)
-                    .opacity(70)
+                    .opacity(85)
             )
         );
 
@@ -61,7 +73,7 @@ public class ImageUploadService {
     }
 
     /**
-     * Upload de foto de perfil — sem marca d'água, redimensionada para 400x400
+     * Upload de foto de perfil — sem marca d'água, crop inteligente no rosto
      */
     public String uploadProfilePhoto(MultipartFile file) throws IOException {
         validateFile(file);
@@ -71,8 +83,7 @@ public class ImageUploadService {
         Map uploadResult = cloudinary.uploader().upload(
             file.getBytes(),
             ObjectUtils.asMap(
-                "public_id",     publicId,
-                "folder",        "perfis",
+                "public_id", publicId,
                 "transformation", new Transformation()
                     .width(400).height(400)
                     .crop("fill")

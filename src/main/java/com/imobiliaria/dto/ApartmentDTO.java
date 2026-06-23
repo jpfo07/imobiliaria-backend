@@ -45,7 +45,10 @@ public class ApartmentDTO {
 
     private PropertyCategory category;
 
+    // Dados do proprietário (apenas admin)
+    private String ownerName;
     private String ownerPhone;
+    private String ownerEmail;
 
     private Boolean featured;
     private Boolean active;

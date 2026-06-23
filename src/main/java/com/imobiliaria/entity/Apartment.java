@@ -53,18 +53,21 @@ public class Apartment {
     @Enumerated(EnumType.STRING)
     private PropertyCategory category;
 
-    private String ownerPhone;
+    // Proprietário do imóvel — visível apenas no admin
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "owner_id")
+    private Owner owner;
 
     private Boolean featured;
     private Boolean active;
     private Boolean sold;
     private Boolean financing;
 
-    @ElementCollection(fetch = FetchType.EAGER) // Eager garante que as fotos carreguem junto com o imóvel
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "apartment_images", joinColumns = @JoinColumn(name = "apartment_id"))
     @Column(name = "image_url")
     @Builder.Default
-    private List<String> images = new ArrayList<>(); // Inicialização crucial
+    private List<String> images = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -76,8 +79,8 @@ public class Apartment {
         this.createdAt = LocalDateTime.now();
         if (this.active == null) this.active = true;
         if (this.featured == null) this.featured = false;
-         if (this.sold == null) this.sold = false;
-         if (this.financing == null) this.financing = false;
+        if (this.sold == null) this.sold = false;
+        if (this.financing == null) this.financing = false;
         if (this.images == null) this.images = new ArrayList<>();
     }
 
