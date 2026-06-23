@@ -2,6 +2,7 @@ package com.imobiliaria.service;
 
 import com.imobiliaria.dto.ApartmentDTO;
 import com.imobiliaria.entity.Apartment;
+import com.imobiliaria.entity.PropertyCategory;
 import com.imobiliaria.entity.PropertyType;
 import com.imobiliaria.repository.ApartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +31,18 @@ public class ApartmentService {
                 .orElseThrow(() -> new RuntimeException("Imóvel não encontrado"));
     }
 
-    public List<Apartment> search(String location, String type, BigDecimal minPrice,
-                                   BigDecimal maxPrice, Integer bedrooms) {
+    public List<Apartment> search(String location, String type, String category,
+                                   BigDecimal minPrice, BigDecimal maxPrice, Integer bedrooms) {
         PropertyType propertyType = null;
         if (type != null && !type.isBlank()) {
             propertyType = PropertyType.valueOf(type.toUpperCase());
         }
-        return apartmentRepository.searchApartments(location, propertyType, minPrice, maxPrice, bedrooms);
+        PropertyCategory propertyCategory = null;
+        if (category != null && !category.isBlank()) {
+            propertyCategory = PropertyCategory.valueOf(category.toUpperCase());
+        }
+        return apartmentRepository.searchApartments(location, propertyType, propertyCategory,
+                minPrice, maxPrice, bedrooms);
     }
 
     public Apartment create(ApartmentDTO dto) {
@@ -76,7 +82,9 @@ public class ApartmentService {
         apartment.setParkingSpots(dto.getParkingSpots());
         apartment.setArea(dto.getArea());
         apartment.setType(dto.getType());
-        
+        apartment.setCategory(dto.getCategory());
+        apartment.setOwnerPhone(dto.getOwnerPhone());
+
         // Garante que valores booleanos não sejam nulos
         apartment.setFeatured(dto.getFeatured() != null ? dto.getFeatured() : false);
         apartment.setActive(dto.getActive() != null ? dto.getActive() : true);

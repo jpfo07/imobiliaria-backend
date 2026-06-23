@@ -50,6 +50,11 @@ public class Apartment {
     @Column(nullable = false)
     private PropertyType type;
 
+    @Enumerated(EnumType.STRING)
+    private PropertyCategory category;
+
+    private String ownerPhone;
+
     private Boolean featured;
     private Boolean active;
     private Boolean sold;

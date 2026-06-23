@@ -36,9 +36,10 @@ public class ApartmentController {
     public ResponseEntity<List<Apartment>> search(
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String type,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer bedrooms) {
-        return ResponseEntity.ok(apartmentService.search(location, type, minPrice, maxPrice, bedrooms));
+        return ResponseEntity.ok(apartmentService.search(location, type, category, minPrice, maxPrice, bedrooms));
     }
 }

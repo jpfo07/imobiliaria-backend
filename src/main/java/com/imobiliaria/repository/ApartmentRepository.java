@@ -1,6 +1,7 @@
 package com.imobiliaria.repository;
 
 import com.imobiliaria.entity.Apartment;
+import com.imobiliaria.entity.PropertyCategory;
 import com.imobiliaria.entity.PropertyType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
              OR LOWER(a.neighborhood) LIKE LOWER(CONCAT('%', :location, '%'))
              OR LOWER(a.city) LIKE LOWER(CONCAT('%', :location, '%')))
         AND (:type IS NULL OR a.type = :type)
+        AND (:category IS NULL OR a.category = :category)
         AND (:minPrice IS NULL OR a.price >= :minPrice)
         AND (:maxPrice IS NULL OR a.price <= :maxPrice)
         AND (:bedrooms IS NULL OR a.bedrooms >= :bedrooms)
@@ -29,6 +31,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
     List<Apartment> searchApartments(
         @Param("location") String location,
         @Param("type") PropertyType type,
+        @Param("category") PropertyCategory category,
         @Param("minPrice") BigDecimal minPrice,
         @Param("maxPrice") BigDecimal maxPrice,
         @Param("bedrooms") Integer bedrooms

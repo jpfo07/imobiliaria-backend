@@ -1,5 +1,6 @@
 package com.imobiliaria.dto;
 
+import com.imobiliaria.entity.PropertyCategory;
 import com.imobiliaria.entity.PropertyType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -41,6 +42,10 @@ public class ApartmentDTO {
 
     @NotNull(message = "Tipo é obrigatório")
     private PropertyType type;
+
+    private PropertyCategory category;
+
+    private String ownerPhone;
 
     private Boolean featured;
     private Boolean active;
