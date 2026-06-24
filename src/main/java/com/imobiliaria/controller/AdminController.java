@@ -88,4 +88,10 @@ public class AdminController {
         ownerService.updateOwner(id, dto);
         return ResponseEntity.ok(Map.of("message", "Proprietário atualizado com sucesso"));
     }
+
+    @DeleteMapping("/owners/{id}")
+public ResponseEntity<Map<String, String>> deleteOwner(@PathVariable Long id) {
+    ownerService.deleteOwner(id);
+    return ResponseEntity.ok(Map.of("message", "Proprietário excluído com sucesso"));
+}
 }

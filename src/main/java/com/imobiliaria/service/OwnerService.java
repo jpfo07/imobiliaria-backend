@@ -60,4 +60,18 @@ public class OwnerService {
             );
         }).collect(Collectors.toList());
     }
+
+    public void deleteOwner(Long id) {
+    Owner owner = ownerRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Proprietário não encontrado"));
+
+    // Desvincula o owner dos imóveis antes de deletar
+    List<Apartment> apartments = apartmentRepository.findAll().stream()
+            .filter(a -> a.getOwner() != null && a.getOwner().getId().equals(id))
+            .collect(Collectors.toList());
+    apartments.forEach(a -> a.setOwner(null));
+    apartmentRepository.saveAll(apartments);
+
+    ownerRepository.delete(owner);
+}
 }

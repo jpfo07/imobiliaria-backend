@@ -29,7 +29,7 @@ public class ApartmentDTO {
     @Min(value = 0, message = "Quartos deve ser >= 0")
     private Integer bedrooms;
 
-    @Min(value = 1, message = "Banheiros deve ser >= 1")
+    @Min(value = 0, message = "Banheiros deve ser >= 0")  // <-- era 1, agora 0
     private Integer bathrooms;
 
     private Integer parkingSpots;
@@ -43,7 +43,6 @@ public class ApartmentDTO {
 
     private PropertyCategory category;
 
-    // Dados do proprietário (apenas admin)
     private String ownerName;
     private String ownerPhone;
     private String ownerEmail;
