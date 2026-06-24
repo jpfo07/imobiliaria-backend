@@ -71,7 +71,21 @@ public class ApartmentService {
 
     public void hardDelete(Long id) {
         Apartment apartment = getById(id);
+        Owner owner = apartment.getOwner();
+
+        // Desvincula o owner antes de deletar para evitar FK constraint
+        apartment.setOwner(null);
+        apartmentRepository.save(apartment);
+
         apartmentRepository.delete(apartment);
+
+        // Se o owner ficou sem nenhum imóvel, remove ele também
+        if (owner != null) {
+            boolean stillHasApartments = apartmentRepository.existsByOwnerId(owner.getId());
+            if (!stillHasApartments) {
+                ownerRepository.delete(owner);
+            }
+        }
     }
 
     private Apartment mapToEntity(ApartmentDTO dto, Apartment apartment) {
@@ -89,7 +103,6 @@ public class ApartmentService {
         apartment.setType(dto.getType());
         apartment.setCategory(dto.getCategory());
 
-        // Monta/atualiza proprietário se nome informado
         if (dto.getOwnerName() != null && !dto.getOwnerName().isBlank()) {
             Owner owner = apartment.getOwner() != null ? apartment.getOwner() : new Owner();
             owner.setName(dto.getOwnerName());

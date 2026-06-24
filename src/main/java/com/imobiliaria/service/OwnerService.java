@@ -1,5 +1,6 @@
 package com.imobiliaria.service;
 
+import com.imobiliaria.dto.OwnerDTO;
 import com.imobiliaria.entity.Apartment;
 import com.imobiliaria.entity.Owner;
 import com.imobiliaria.repository.ApartmentRepository;
@@ -17,6 +18,18 @@ public class OwnerService {
 
     private final OwnerRepository ownerRepository;
     private final ApartmentRepository apartmentRepository;
+
+    /**
+     * Atualiza nome, telefone e e-mail de um proprietário existente.
+     */
+    public Owner updateOwner(Long id, OwnerDTO dto) {
+        Owner owner = ownerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Proprietário não encontrado"));
+        owner.setName(dto.getName());
+        owner.setPhone(dto.getPhone());
+        owner.setEmail(dto.getEmail());
+        return ownerRepository.save(owner);
+    }
 
     /**
      * Retorna todos os proprietários com seus imóveis vinculados.

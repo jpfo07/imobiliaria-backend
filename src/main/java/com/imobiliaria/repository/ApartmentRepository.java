@@ -15,6 +15,8 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
 
     List<Apartment> findByFeaturedTrueAndActiveTrue();
 
+    boolean existsByOwnerId(Long ownerId); // <-- NOVO
+
     @Query("""
         SELECT a FROM Apartment a
         WHERE a.active = true

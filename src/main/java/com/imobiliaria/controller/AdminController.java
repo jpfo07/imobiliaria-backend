@@ -1,6 +1,7 @@
 package com.imobiliaria.controller;
 
 import com.imobiliaria.dto.ApartmentDTO;
+import com.imobiliaria.dto.OwnerDTO;
 import com.imobiliaria.entity.Apartment;
 import com.imobiliaria.entity.User;
 import com.imobiliaria.service.*;
@@ -78,5 +79,13 @@ public class AdminController {
     @GetMapping("/owners")
     public ResponseEntity<List<Map<String, Object>>> getAllOwners() {
         return ResponseEntity.ok(ownerService.getAllOwnersWithApartments());
+    }
+
+    @PutMapping("/owners/{id}")
+    public ResponseEntity<Map<String, String>> updateOwner(
+            @PathVariable Long id,
+            @Valid @RequestBody OwnerDTO dto) {
+        ownerService.updateOwner(id, dto);
+        return ResponseEntity.ok(Map.of("message", "Proprietário atualizado com sucesso"));
     }
 }
