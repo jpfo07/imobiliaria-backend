@@ -108,6 +108,9 @@ public class ApartmentService {
             owner.setName(dto.getOwnerName());
             owner.setPhone(dto.getOwnerPhone());
             owner.setEmail(dto.getOwnerEmail());
+            // Persiste/atualiza o owner explicitamente antes de associar,
+            // pois o cascade PERSIST não cobre entidades transientes em updates.
+            owner = ownerRepository.save(owner);
             apartment.setOwner(owner);
         } else {
             apartment.setOwner(null);
