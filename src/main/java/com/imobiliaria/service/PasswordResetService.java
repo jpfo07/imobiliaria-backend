@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,22 +30,34 @@ public class PasswordResetService {
     private String mailFrom;
 
     /**
-     * Gera token de reset e envia e-mail.
-     * Sempre retorna sucesso (não revela se o e-mail existe).
+     * Gera token e envia e-mail. Sempre responde com sucesso
+     * para não revelar se o e-mail está cadastrado.
      */
     public void requestReset(String email) {
-        userRepository.findByEmail(email).ifPresent(user -> {
-            String token = UUID.randomUUID().toString();
-            user.setResetToken(token);
-            user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
-            userRepository.save(user);
+        Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
 
+        if (userOpt.isEmpty()) {
+            // Não revela que o e-mail não existe — retorna silenciosamente
+            log.info("Reset solicitado para e-mail não cadastrado: {}", email);
+            return;
+        }
+
+        User user = userOpt.get();
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+
+        try {
             sendResetEmail(user.getEmail(), user.getName(), token);
-        });
+        } catch (Exception e) {
+            // Log mas não lança exceção — a resposta HTTP sempre é 200
+            log.error("Falha ao enviar e-mail de reset para {}: {}", email, e.getMessage());
+        }
     }
 
     /**
-     * Valida o token e redefine a senha.
+     * Valida token e redefine a senha.
      */
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findAll().stream()
@@ -64,25 +77,21 @@ public class PasswordResetService {
     }
 
     private void sendResetEmail(String to, String name, String token) {
-        try {
-            String link = frontendUrl + "/redefinir-senha?token=" + token;
+        String link = frontendUrl + "/redefinir-senha?token=" + token;
 
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setFrom(mailFrom);
-            msg.setTo(to);
-            msg.setSubject("Redefinição de senha — Moreira & Oliveira Imóveis");
-            msg.setText(
-                "Olá, " + name + "!\n\n" +
-                "Recebemos uma solicitação para redefinir a senha da sua conta.\n\n" +
-                "Clique no link abaixo para criar uma nova senha (válido por 1 hora):\n\n" +
-                link + "\n\n" +
-                "Se você não fez essa solicitação, pode ignorar este e-mail.\n\n" +
-                "Atenciosamente,\nEquipe Moreira & Oliveira Imóveis"
-            );
-            mailSender.send(msg);
-            log.info("E-mail de reset enviado para: {}", to);
-        } catch (Exception e) {
-            log.error("Erro ao enviar e-mail de reset para {}: {}", to, e.getMessage());
-        }
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(mailFrom);
+        msg.setTo(to);
+        msg.setSubject("Redefinição de senha — Moreira & Oliveira Imóveis");
+        msg.setText(
+            "Olá, " + name + "!\n\n" +
+            "Recebemos uma solicitação para redefinir a senha da sua conta.\n\n" +
+            "Clique no link abaixo para criar uma nova senha (válido por 1 hora):\n\n" +
+            link + "\n\n" +
+            "Se você não fez essa solicitação, pode ignorar este e-mail.\n\n" +
+            "Atenciosamente,\nEquipe Moreira & Oliveira Imóveis"
+        );
+        mailSender.send(msg);
+        log.info("E-mail de reset enviado para: {}", to);
     }
 }

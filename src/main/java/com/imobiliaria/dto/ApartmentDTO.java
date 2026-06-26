@@ -46,6 +46,7 @@ public class ApartmentDTO {
     private String ownerName;
     private String ownerPhone;
     private String ownerEmail;
+    private Long ownerId;   // para vincular a proprietário existente
 
     private Boolean featured;
     private Boolean active;

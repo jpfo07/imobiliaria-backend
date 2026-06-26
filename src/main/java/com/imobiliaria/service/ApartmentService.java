@@ -54,13 +54,16 @@ public class ApartmentService {
                 minPrice, maxPrice, bedrooms);
     }
 
+    @Transactional
     public Apartment create(ApartmentDTO dto) {
         Apartment apartment = mapToEntity(dto, new Apartment());
         return apartmentRepository.save(apartment);
     }
 
+    @Transactional
     public Apartment update(Long id, ApartmentDTO dto) {
-        Apartment apartment = getById(id);
+        Apartment apartment = apartmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Imóvel não encontrado"));
         mapToEntity(dto, apartment);
         return apartmentRepository.save(apartment);
     }
@@ -137,11 +140,29 @@ public class ApartmentService {
         apartment.setCategory(dto.getCategory());
 
         if (dto.getOwnerName() != null && !dto.getOwnerName().isBlank()) {
-            Owner owner = apartment.getOwner() != null ? apartment.getOwner() : new Owner();
-            owner.setName(dto.getOwnerName());
-            owner.setPhone(dto.getOwnerPhone());
-            owner.setEmail(dto.getOwnerEmail());
-            owner = ownerRepository.save(owner);
+            if (dto.getOwnerId() != null) {
+                // Vincula a um proprietário existente pelo ID
+                Owner owner = ownerRepository.findById(dto.getOwnerId())
+                        .orElseThrow(() -> new RuntimeException("Proprietário não encontrado"));
+                apartment.setOwner(owner);
+            } else {
+                // Cria ou atualiza proprietário pelo nome/dados
+                Owner owner;
+                if (apartment.getOwner() != null && apartment.getOwner().getId() != null) {
+                    owner = ownerRepository.findById(apartment.getOwner().getId())
+                            .orElse(new Owner());
+                } else {
+                    owner = new Owner();
+                }
+                owner.setName(dto.getOwnerName());
+                owner.setPhone(dto.getOwnerPhone());
+                owner.setEmail(dto.getOwnerEmail());
+                owner = ownerRepository.save(owner);
+                apartment.setOwner(owner);
+            }
+        } else if (dto.getOwnerId() != null) {
+            Owner owner = ownerRepository.findById(dto.getOwnerId())
+                    .orElseThrow(() -> new RuntimeException("Proprietário não encontrado"));
             apartment.setOwner(owner);
         } else {
             apartment.setOwner(null);
