@@ -36,6 +36,10 @@ public class User {
     private String phone;
     private String photoUrl;
 
+    // Reset de senha
+    private String resetToken;
+    private LocalDateTime resetTokenExpiry;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

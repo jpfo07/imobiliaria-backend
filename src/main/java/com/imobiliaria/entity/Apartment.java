@@ -63,6 +63,14 @@ public class Apartment {
     private Boolean sold;
     private Boolean financing;
 
+    /** Ordem de exibição na home (cards). Menor valor = aparece primeiro. */
+    @Column(name = "display_order")
+    private Integer displayOrder;
+
+    /** Ordem de exibição no carrossel de destaques. Menor valor = aparece primeiro. */
+    @Column(name = "featured_order")
+    private Integer featuredOrder;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "apartment_images", joinColumns = @JoinColumn(name = "apartment_id"))
     @Column(name = "image_url")

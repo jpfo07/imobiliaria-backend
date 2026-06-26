@@ -56,13 +56,13 @@ public class ImageUploadService {
                     .background("white")
                     .quality("auto")
                     .fetchFormat("auto")
-                    // Marca d'água: logo no canto inferior direito
+                    // Marca d'água: logo centralizado na parte inferior
                     .chain()
                     .overlay(logoPublicId)
                     .width(180)
                     .crop("scale")
-                    .gravity("south_east")
-                    .x(15).y(15)
+                    .gravity("south")
+                    .y(15)
                     .opacity(85)
             )
         );

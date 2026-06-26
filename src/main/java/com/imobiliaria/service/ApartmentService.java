@@ -1,6 +1,7 @@
 package com.imobiliaria.service;
 
 import com.imobiliaria.dto.ApartmentDTO;
+import com.imobiliaria.dto.ReorderRequest;
 import com.imobiliaria.entity.Apartment;
 import com.imobiliaria.entity.Owner;
 import com.imobiliaria.entity.PropertyCategory;
@@ -9,6 +10,7 @@ import com.imobiliaria.repository.ApartmentRepository;
 import com.imobiliaria.repository.OwnerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -73,18 +75,49 @@ public class ApartmentService {
         Apartment apartment = getById(id);
         Owner owner = apartment.getOwner();
 
-        // Desvincula o owner antes de deletar para evitar FK constraint
         apartment.setOwner(null);
         apartmentRepository.save(apartment);
-
         apartmentRepository.delete(apartment);
 
-        // Se o owner ficou sem nenhum imóvel, remove ele também
         if (owner != null) {
             boolean stillHasApartments = apartmentRepository.existsByOwnerId(owner.getId());
             if (!stillHasApartments) {
                 ownerRepository.delete(owner);
             }
+        }
+    }
+
+    /**
+     * Reordena os cards da home (displayOrder).
+     * orderedIds contém todos os IDs na nova ordem desejada.
+     */
+    @Transactional
+    public void reorderHome(ReorderRequest request) {
+        List<Long> orderedIds = request.getOrderedIds();
+        for (int i = 0; i < orderedIds.size(); i++) {
+            final int order = i;
+            Long id = orderedIds.get(i);
+            apartmentRepository.findById(id).ifPresent(apt -> {
+                apt.setDisplayOrder(order);
+                apartmentRepository.save(apt);
+            });
+        }
+    }
+
+    /**
+     * Reordena o carrossel de destaques (featuredOrder).
+     * orderedIds contém apenas os IDs em destaque na nova ordem.
+     */
+    @Transactional
+    public void reorderFeatured(ReorderRequest request) {
+        List<Long> orderedIds = request.getOrderedIds();
+        for (int i = 0; i < orderedIds.size(); i++) {
+            final int order = i;
+            Long id = orderedIds.get(i);
+            apartmentRepository.findById(id).ifPresent(apt -> {
+                apt.setFeaturedOrder(order);
+                apartmentRepository.save(apt);
+            });
         }
     }
 
@@ -108,8 +141,6 @@ public class ApartmentService {
             owner.setName(dto.getOwnerName());
             owner.setPhone(dto.getOwnerPhone());
             owner.setEmail(dto.getOwnerEmail());
-            // Persiste/atualiza o owner explicitamente antes de associar,
-            // pois o cascade PERSIST não cobre entidades transientes em updates.
             owner = ownerRepository.save(owner);
             apartment.setOwner(owner);
         } else {
@@ -125,6 +156,14 @@ public class ApartmentService {
             apartment.setImages(new ArrayList<>(dto.getImages()));
         } else {
             apartment.setImages(new ArrayList<>());
+        }
+
+        // Ordens customizadas (opcionais — só sobrescreve se enviado no DTO)
+        if (dto.getDisplayOrder() != null) {
+            apartment.setDisplayOrder(dto.getDisplayOrder());
+        }
+        if (dto.getFeaturedOrder() != null) {
+            apartment.setFeaturedOrder(dto.getFeaturedOrder());
         }
 
         return apartment;

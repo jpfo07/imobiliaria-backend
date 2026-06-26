@@ -52,6 +52,8 @@ public class ApartmentDTO {
     private Boolean sold;
     private Boolean financing;
     private List<String> images;
+    private Integer displayOrder;
+    private Integer featuredOrder;
 
     @AssertTrue(message = "Número de quartos é obrigatório")
     private boolean isBedroomsValid() {
