@@ -20,6 +20,14 @@ public class OwnerService {
     private final OwnerRepository ownerRepository;
     private final ApartmentRepository apartmentRepository;
 
+    public Owner createOwner(OwnerDTO dto) {
+        Owner owner = new Owner();
+        owner.setName(dto.getName());
+        owner.setPhone(dto.getPhone());
+        owner.setEmail(dto.getEmail());
+        return ownerRepository.save(owner);
+    }
+
     public Owner updateOwner(Long id, OwnerDTO dto) {
         Owner owner = ownerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Proprietário não encontrado"));

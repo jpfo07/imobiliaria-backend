@@ -26,9 +26,6 @@ public class PasswordResetService {
     @Value("${app.frontend.url.reset}")
     private String frontendUrl;
 
-    @Value("${spring.mail.username:}")
-    private String mailFrom;
-
     /**
      * Gera token e envia e-mail. Sempre responde com sucesso
      * para não revelar se o e-mail está cadastrado.
@@ -80,7 +77,7 @@ public class PasswordResetService {
         String link = frontendUrl + "/redefinir-senha?token=" + token;
 
         SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(mailFrom);
+        msg.setFrom("noreply@moreiraeoliveiraimoveis.com.br");
         msg.setTo(to);
         msg.setSubject("Redefinição de senha — Moreira & Oliveira Imóveis");
         msg.setText(

@@ -4,6 +4,7 @@ import com.imobiliaria.dto.ApartmentDTO;
 import com.imobiliaria.dto.OwnerDTO;
 import com.imobiliaria.dto.ReorderRequest;
 import com.imobiliaria.entity.Apartment;
+import com.imobiliaria.entity.Owner;
 import com.imobiliaria.entity.User;
 import com.imobiliaria.service.*;
 import jakarta.validation.Valid;
@@ -99,6 +100,16 @@ public class AdminController {
     }
 
     // ── Proprietários ──────────────────────────────────────
+    @PostMapping("/owners")
+    public ResponseEntity<Map<String, Object>> createOwner(@Valid @RequestBody OwnerDTO dto) {
+        Owner owner = ownerService.createOwner(dto);
+        return ResponseEntity.ok(Map.of(
+            "id", owner.getId(),
+            "name", owner.getName(),
+            "message", "Proprietário criado com sucesso"
+        ));
+    }
+
     @GetMapping("/owners")
     public ResponseEntity<List<Map<String, Object>>> getAllOwners() {
         return ResponseEntity.ok(ownerService.getAllOwnersWithApartments());
