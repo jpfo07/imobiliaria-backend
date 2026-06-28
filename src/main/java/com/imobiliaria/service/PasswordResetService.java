@@ -30,10 +30,9 @@ public class PasswordResetService {
     @Value("${MAIL_PASSWORD:}")
     private String resendApiKey;
 
-    /**
-     * Gera token e envia e-mail via API REST do Resend (instantâneo).
-     * Sempre responde com sucesso para não revelar se o e-mail está cadastrado.
-     */
+    private static final String LOGO_URL =
+        "https://res.cloudinary.com/drq3eqr0p/image/upload/v1782248304/logos/moreira-logo.jpg";
+
     public void requestReset(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
 
@@ -55,9 +54,6 @@ public class PasswordResetService {
         }
     }
 
-    /**
-     * Valida token e redefine a senha.
-     */
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findAll().stream()
                 .filter(u -> token.equals(u.getResetToken()))
@@ -78,30 +74,109 @@ public class PasswordResetService {
     private void sendResetEmail(String to, String name, String token) throws Exception {
         String link = frontendUrl + "/redefinir-senha?token=" + token;
 
-        String body = """
+        String html = """
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+            <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+                <tr><td align="center">
+                  <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+
+                    <!-- Header com logo -->
+                    <tr>
+                      <td align="center" style="background:#1a1a2e;padding:32px 40px;">
+                        <img src="%s" alt="Moreira & Oliveira Imóveis" width="160" style="display:block;border-radius:8px;" />
+                      </td>
+                    </tr>
+
+                    <!-- Corpo -->
+                    <tr>
+                      <td style="padding:40px;">
+                        <h1 style="margin:0 0 16px;font-size:22px;color:#1a1a2e;">Redefinição de senha</h1>
+                        <p style="margin:0 0 12px;font-size:15px;color:#444;line-height:1.6;">Olá, <strong>%s</strong>!</p>
+                        <p style="margin:0 0 28px;font-size:15px;color:#444;line-height:1.6;">
+                          Recebemos uma solicitação para redefinir a senha da sua conta.<br>
+                          Clique no botão abaixo para criar uma nova senha. O link é válido por <strong>1 hora</strong>.
+                        </p>
+
+                        <!-- Botão -->
+                        <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                          <tr>
+                            <td align="center" style="background:#c9a84c;border-radius:10px;">
+                              <a href="%s" target="_blank"
+                                 style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:bold;color:#1a1a2e;text-decoration:none;">
+                                Redefinir minha senha
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <p style="margin:0 0 8px;font-size:13px;color:#888;line-height:1.5;">
+                          Se o botão não funcionar, copie e cole este link no navegador:
+                        </p>
+                        <p style="margin:0 0 28px;font-size:12px;color:#c9a84c;word-break:break-all;">%s</p>
+
+                        <hr style="border:none;border-top:1px solid #eee;margin:0 0 24px;" />
+                        <p style="margin:0;font-size:13px;color:#aaa;line-height:1.5;">
+                          Se você não solicitou a redefinição de senha, pode ignorar este e-mail com segurança.
+                          Sua senha não será alterada.
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td align="center" style="background:#f9f9f9;padding:20px 40px;border-top:1px solid #eee;">
+                        <p style="margin:0;font-size:12px;color:#aaa;">
+                          © 2025 Moreira & Oliveira Imóveis · Todos os direitos reservados
+                        </p>
+                      </td>
+                    </tr>
+
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(LOGO_URL, name, link, link);
+
+        // Escapa as aspas para o JSON
+        String bodyJson = String.format("""
             {
                 "from": "Moreira & Oliveira Imóveis <noreply@moreiraeoliveiraimoveis.com.br>",
                 "to": ["%s"],
                 "subject": "Redefinição de senha — Moreira & Oliveira Imóveis",
-                "text": "Olá, %s!\\n\\nRecebemos uma solicitação para redefinir a senha da sua conta.\\n\\nClique no link abaixo para criar uma nova senha (válido por 1 hora):\\n\\n%s\\n\\nSe você não fez essa solicitação, pode ignorar este e-mail.\\n\\nAtenciosamente,\\nEquipe Moreira & Oliveira Imóveis"
+                "html": %s
             }
-            """.formatted(to, name, link);
+            """, to, toJsonString(html));
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.resend.com/emails"))
                 .header("Authorization", "Bearer " + resendApiKey)
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .POST(HttpRequest.BodyPublishers.ofString(bodyJson))
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            log.info("E-mail de reset enviado via Resend API para: {}", to);
+            log.info("E-mail HTML de reset enviado via Resend para: {}", to);
         } else {
             log.error("Resend API retornou {}: {}", response.statusCode(), response.body());
             throw new RuntimeException("Falha ao enviar e-mail: " + response.body());
         }
+    }
+
+    /** Converte string HTML para JSON string escapada */
+    private String toJsonString(String html) {
+        String escaped = html
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("\t", "\\t");
+        return "\"" + escaped + "\"";
     }
 }
