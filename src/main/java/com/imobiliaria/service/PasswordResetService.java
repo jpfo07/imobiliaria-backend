@@ -5,11 +5,13 @@ import com.imobiliaria.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,20 +23,21 @@ public class PasswordResetService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
 
     @Value("${app.frontend.url.reset}")
     private String frontendUrl;
 
+    @Value("${MAIL_PASSWORD:}")
+    private String resendApiKey;
+
     /**
-     * Gera token e envia e-mail. Sempre responde com sucesso
-     * para não revelar se o e-mail está cadastrado.
+     * Gera token e envia e-mail via API REST do Resend (instantâneo).
+     * Sempre responde com sucesso para não revelar se o e-mail está cadastrado.
      */
     public void requestReset(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
 
         if (userOpt.isEmpty()) {
-            // Não revela que o e-mail não existe — retorna silenciosamente
             log.info("Reset solicitado para e-mail não cadastrado: {}", email);
             return;
         }
@@ -48,7 +51,6 @@ public class PasswordResetService {
         try {
             sendResetEmail(user.getEmail(), user.getName(), token);
         } catch (Exception e) {
-            // Log mas não lança exceção — a resposta HTTP sempre é 200
             log.error("Falha ao enviar e-mail de reset para {}: {}", email, e.getMessage());
         }
     }
@@ -73,22 +75,33 @@ public class PasswordResetService {
         userRepository.save(user);
     }
 
-    private void sendResetEmail(String to, String name, String token) {
+    private void sendResetEmail(String to, String name, String token) throws Exception {
         String link = frontendUrl + "/redefinir-senha?token=" + token;
 
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom("noreply@moreiraeoliveiraimoveis.com.br");
-        msg.setTo(to);
-        msg.setSubject("Redefinição de senha — Moreira & Oliveira Imóveis");
-        msg.setText(
-            "Olá, " + name + "!\n\n" +
-            "Recebemos uma solicitação para redefinir a senha da sua conta.\n\n" +
-            "Clique no link abaixo para criar uma nova senha (válido por 1 hora):\n\n" +
-            link + "\n\n" +
-            "Se você não fez essa solicitação, pode ignorar este e-mail.\n\n" +
-            "Atenciosamente,\nEquipe Moreira & Oliveira Imóveis"
-        );
-        mailSender.send(msg);
-        log.info("E-mail de reset enviado para: {}", to);
+        String body = """
+            {
+                "from": "Moreira & Oliveira Imóveis <noreply@moreiraeoliveiraimoveis.com.br>",
+                "to": ["%s"],
+                "subject": "Redefinição de senha — Moreira & Oliveira Imóveis",
+                "text": "Olá, %s!\\n\\nRecebemos uma solicitação para redefinir a senha da sua conta.\\n\\nClique no link abaixo para criar uma nova senha (válido por 1 hora):\\n\\n%s\\n\\nSe você não fez essa solicitação, pode ignorar este e-mail.\\n\\nAtenciosamente,\\nEquipe Moreira & Oliveira Imóveis"
+            }
+            """.formatted(to, name, link);
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.resend.com/emails"))
+                .header("Authorization", "Bearer " + resendApiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            log.info("E-mail de reset enviado via Resend API para: {}", to);
+        } else {
+            log.error("Resend API retornou {}: {}", response.statusCode(), response.body());
+            throw new RuntimeException("Falha ao enviar e-mail: " + response.body());
+        }
     }
 }
